@@ -1,8 +1,8 @@
 import pandas as pd
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+from sklearn.decomposition import NMF
 
-# genre mapping from uniqueGenres.txt
+# Define the genre mapping dictionary
 genre_mapping = {
     'Adventure': ['Adventure', 'Role-Playing'],
     'Animation': ['Platform', 'Adventure'],
@@ -26,42 +26,56 @@ genre_mapping = {
     '(no genres listed)': ['Misc']
 }
 
-movies = pd.read_csv('cleaned_movies.csv')
-games = pd.read_csv('cleaned_video_games.csv')
+vg_df = pd.read_csv('cleaned_video_games.csv', index_col=0)
+m_df = pd.read_csv('cleaned_movies.csv', index_col=0)
 
-# print(movies.columns)
-# print('----------------')
-# print(games.columns)
+# variable to rate only 70% of items for each user (i'm randomly generating ratings)
+pct_rated = 0.7
 
-# make a column in movies using the mapped genres
-movies['MappedGenre'] = movies['Genre'].apply(lambda x: next((k for k, v in genre_mapping.items() if any(g in v for g in x.split('|'))), '(no genres listed)'))
+# intial user-item matrices
+vg_ratings = np.zeros((5000, len(vg_df)))
+m_ratings = np.zeros((5000, len(m_df)))
+# print(vg_ratings)
 
-# make a column in games using the mapped genres
-games['MappedGenre'] = games['Genre'].apply(lambda x: next((k for k, v in genre_mapping.items() if x in v), '(no genres listed)'))
+# generate random ratings for random items
+for i in range(5000):
+    vg_cols = np.random.choice(vg_df.index, size=int(len(vg_df) * pct_rated), replace=False)
+    m_cols = np.random.choice(m_df.index, size=int(len(m_df) * pct_rated), replace=False)
+    for col in vg_cols:
+        vg_ratings[i][vg_df.index.get_loc(col)] = np.random.randint(1, 6)
+    for col in m_cols:
+        m_ratings[i][m_df.index.get_loc(col)] = np.random.randint(1, 6)
 
-# merge movies and games using the mapped genres
-merged_data = pd.merge(movies, games, on='MappedGenre', how='outer')
+# update genre mappings
+for index, row in m_df.iterrows():
+    genres = row['Genre'].split('|')
+    mapped_genres = set()
+    for genre in genres:
+        if genre in genre_mapping:
+            mapped_genres.update(genre_mapping[genre])
+            # print(mapped_genres)
+    for genre in mapped_genres:
+        m_df.at[index, genre] = 1
 
-# print(merged_data.columns)
+m_df.drop(columns=['Genre'], inplace=True)
 
-# combine genres and ratings into one column (similar to aggregate matrix from here https://recsys.acm.org/wp-content/uploads/2014/10/recsys2014-tutorial-cross_domain.pdf)
-features = ['MappedGenre', 'rating_x', 'rating_y']
-merged_data['combined_features'] = merged_data[features].apply(lambda x: ' '.join(x.dropna().astype(str)), axis=1)
+# finalize user-item matrices
+vg_matrix = pd.DataFrame(vg_ratings, columns=vg_df['Title'], dtype=np.float64)
+# print(vg_matrix)
+m_matrix = m_df.drop(columns=['Title']).astype(np.float64)
+m_matrix.columns = m_df['Title']
 
-# extract features (ratings and genres)
-vectorizer = CountVectorizer()
-feature_matrix = vectorizer.fit_transform(merged_data['combined_features'])
+# make the aggregated matrix
+combined_matrix = pd.concat([vg_matrix, m_matrix], axis=1)
 
-# compute the similarity
-item_similarities = cosine_similarity(feature_matrix)
+# matrix factorization using NMF
+model = NMF(n_components=50, init='random', random_state=0)
+W = model.fit_transform(combined_matrix)
+H = model.components_
 
-def get_top_similar_items(item_id, item_similarities, N=5):
-    all_items = list(merged_data.index)
-    # get similarity scores for the specified item
-    item_scores = list(enumerate(item_similarities[item_id]))
-    item_scores = sorted(item_scores, key=lambda x: x[1], reverse=True)
-    top_items = [i for i, s in item_scores[1:N+1]]
-    return merged_data.iloc[top_items]
+# give the recommendations
+vg_pref = pd.DataFrame(W[:, :len(vg_df)], index=combined_matrix.index)
+vg_recommendations = pd.DataFrame(np.dot(vg_pref.loc[5000], H[len(vg_df):, :]), index=m_matrix.columns, columns=['Score'])
+vg_recommendations.sort_values('Score', ascending=False, inplace=True)
+top_vg_recommendations = vg_recommendations.head(10)
 
-# testing with the first movie --> code runs forever tho!
-print(get_top_similar_items(0, item_similarities, N=10))
