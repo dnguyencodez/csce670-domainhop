@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from sklearn.decomposition import NMF
 
-# Define the genre mapping dictionary
 genre_mapping = {
     'Adventure': ['Adventure', 'Role-Playing'],
     'Animation': ['Platform', 'Adventure'],
