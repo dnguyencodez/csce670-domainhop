@@ -6,11 +6,11 @@ from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 import string
-nltk.download('averaged_perceptron_tagger')
+# nltk.download('averaged_perceptron_tagger')
 # load video game and movie data
 vg_df = pd.read_csv('cleaned_video_games.csv').dropna(subset=['description'])
 m_df = pd.read_csv('cleaned_movies.csv').dropna(subset=['description'])
-print(vg_df.shape, m_df.shape)
+# print(vg_df.shape, m_df.shape)
 def tokenize(text):
     tokens = word_tokenize(text.lower())
     # Remove punctuation and numbers
@@ -70,5 +70,5 @@ def recommend_movies_for_video_game(vg_name, k=10):
     return similar_movies
 
 
-print(recommend_video_games_for_movie("Jumanji (1995)"))
-print(recommend_movies_for_video_game("NBA Jam"))
+# print(recommend_video_games_for_movie("Toy Story (1995)"))
+# print(recommend_movies_for_video_game("NBA Jam"))
