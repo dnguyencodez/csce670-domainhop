@@ -23,7 +23,7 @@ export default class Recommender extends React.Component {
         return (
             <div className="main-container">
                 <div className='title'>
-                    <h1>Cross-Domain Recommender</h1>
+                    <h1>DomainHop</h1>
                 </div>
                 <div className='search-bar'>
                     <div className='buttons'>
@@ -31,12 +31,12 @@ export default class Recommender extends React.Component {
                         <button onClick={() =>this.search()}>Search</button>
                     </div>
                 </div>
-                <div className='search-bar'>
+                {/* <div className='search-bar'>
                     <div className='buttons'>
                         <SearchBar/>
                         <button onClick={() =>this.add()}>Add</button>
                     </div>
-                </div>
+                </div> */}
                 <div className='search-bar'>
                     <div className='buttons'>
                         <button onClick={() =>this.recommend()}>Recommend</button>
