@@ -29,7 +29,7 @@ def recommendGames():
     return jsonify(response), 200
 
 # return movie recommendations for a given game
-@app.route('/recommendGames', methods=['POST'])
+@app.route('/recommendMovies', methods=['POST'])
 def recommendMovies():
     # if not isinstance(movie, str) or not movie:
     #     return False
