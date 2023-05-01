@@ -1,82 +1,95 @@
 import pandas as pd
 import numpy as np
-from sklearn.decomposition import NMF
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import nltk
+from nltk.corpus import wordnet
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+import string
 
-genre_mapping = {
-    'Adventure': ['Adventure', 'Role-Playing'],
-    'Animation': ['Platform', 'Adventure'],
-    'Children': ['Platform'],
-    'Comedy': ['Misc'],
-    'Fantasy': ['Adventure', 'Role-Playing'],
-    'Romance': ['Simulation'],
-    'Drama': ['Action', 'Adventure', 'Strategy', 'Role-Playing'],
-    'Action': ['Action', 'Shooter'],
-    'Crime': ['Action', 'Strategy'],
-    'Thriller': ['Action', 'Shooter'],
-    'Horror': ['Horror'],
-    'Mystery': ['Puzzle'],
-    'Sci-Fi': ['Action', 'Shooter', 'Simulation'],
-    'Documentary': ['Simulation'],
-    'IMAX': ['Misc'],
-    'War': ['Strategy'],
-    'Musical': ['Music', 'Misc'],
-    'Western': ['Adventure', 'Shooter', 'Fighting', 'Misc'],
-    'Film-Noir': ['Misc'],
-    '(no genres listed)': ['Misc']
-}
+# load video game and movie data
+vg_df = pd.read_csv('cleaned_video_games.csv').dropna(subset=['description'])
+m_df = pd.read_csv('cleaned_movies.csv').dropna(subset=['description'])
 
-vg_df = pd.read_csv('cleaned_video_games.csv')
-m_df = pd.read_csv('cleaned_movies.csv', index_col=0)
-print(vg_df[vg_df["Name"] == "Assassins Creed III"].iloc[0]["description"])
-print(vg_df.info())
-# print(vg_df["Year_of_Release"])
-# variable to rate only 70% of items for each user (i'm randomly generating ratings)
-# pct_rated = 0.7
+# load ratings data
+vg_ratings_df = pd.read_csv('vg_ratings.csv')
+m_ratings_df = pd.read_csv('movie_ratings.csv')
+# print(vg_ratings_df.columns)
+# print(m_ratings_df.columns)
 
-# intial user-item matrices
-# vg_ratings = np.zeros((5000, len(vg_df)))
-# m_ratings = np.zeros((5000, len(m_df)))
-# print(vg_ratings)
+# Create a lemmatizer function
+def lemmatize(token):
+    lemma = WordNetLemmatizer().lemmatize(token, get_wordnet_pos(token))
+    return lemma
 
-# generate random ratings for random items
-# for i in range(5000):
-#     vg_cols = np.random.choice(vg_df.index, size=int(len(vg_df) * pct_rated), replace=False)
-#     m_cols = np.random.choice(m_df.index, size=int(len(m_df) * pct_rated), replace=False)
-#     for col in vg_cols:
-#         vg_ratings[i][vg_df.index.get_loc(col)] = np.random.randint(1, 6)
-#     for col in m_cols:
-#         m_ratings[i][m_df.index.get_loc(col)] = np.random.randint(1, 6)
+# Define a function to get the WordNet part of speech (POS) tag for a given token
+def get_wordnet_pos(token):
+    # Map POS tag to first character used by WordNetLemmatizer
+    tag = nltk.pos_tag([token])[0][1][0].upper()
+    tag_dict = {"J": wordnet.ADJ,
+                "N": wordnet.NOUN,
+                "V": wordnet.VERB,
+                "R": wordnet.ADV}
+    return tag_dict.get(tag, wordnet.NOUN) # default to NOUN if tag is not found
 
-# # update genre mappings
-# for index, row in m_df.iterrows():
-#     genres = row['Genre'].split('|')
-#     mapped_genres = set()
-#     for genre in genres:
-#         if genre in genre_mapping:
-#             mapped_genres.update(genre_mapping[genre])
-#             # print(mapped_genres)
-#     for genre in mapped_genres:
-#         m_df.at[index, genre] = 1
+# Apply the tokenizer and lemmatizer functions to the description columns in the dataframes
+# vg_df['description'] = vg_df['description'].apply(lambda x: ' '.join([lemmatize(token) for token in word_tokenize(x.lower()) if token not in string.punctuation]))
+# m_df['description'] = m_df['description'].apply(lambda x: ' '.join([lemmatize(token) for token in word_tokenize(x.lower()) if token not in string.punctuation]))
 
-# m_df.drop(columns=['Genre'], inplace=True)
+# create a combined dataframe with only the relevant columns
+combined_df = pd.concat([vg_df[['Name', 'description']], m_df[['title', 'description']]])
 
-# # finalize user-item matrices
-# vg_matrix = pd.DataFrame(vg_ratings, columns=vg_df['Title'], dtype=np.float64)
-# # print(vg_matrix)
-# m_matrix = m_df.drop(columns=['Title']).astype(np.float64)
-# m_matrix.columns = m_df['Title']
+# create a TfidfVectorizer and fit_transform the description column of the combined dataframe
+vectorizer = TfidfVectorizer()
+desc_matrix = vectorizer.fit_transform(combined_df['description'])
 
-# # make the aggregated matrix
-# combined_matrix = pd.concat([vg_matrix, m_matrix], axis=1)
+# create a ratings matrix with users as rows and video games and movies as columns
+ratings = pd.concat([vg_ratings_df, m_ratings_df], axis=1)
 
-# # matrix factorization using NMF
-# model = NMF(n_components=50, init='random', random_state=0)
-# W = model.fit_transform(combined_matrix)
-# H = model.components_
+# normalize the ratings
+mean_rating = ratings.mean(axis=1)
+ratings = ratings.sub(mean_rating, axis=0)
+ratings = ratings.fillna(0)
 
-# # give the recommendations
-# vg_pref = pd.DataFrame(W[:, :len(vg_df)], index=combined_matrix.index)
-# vg_recommendations = pd.DataFrame(np.dot(vg_pref.loc[5000], H[len(vg_df):, :]), index=m_matrix.columns, columns=['Score'])
-# vg_recommendations.sort_values('Score', ascending=False, inplace=True)
-# top_vg_recommendations = vg_recommendations.head(10)
+# calculate the cosine similarity matrix using both description and ratings
+desc_cos_sim_matrix = cosine_similarity(desc_matrix)
+ratings_cos_sim_matrix = cosine_similarity(ratings)
 
+def recommend_video_games_for_movie(movie_title, user_id, k=10):
+    user_ratings = vg_ratings_df[vg_ratings_df['users'] == user_id]
+    # get the index of the movie in the m_df dataframe
+    movie_index = m_df.index[m_df['title'] == movie_title][0]
+    # get the top k similar video games to the movie
+    similar_video_games_indices = desc_cos_sim_matrix[movie_index].argsort()[::-1]
+    similar_video_games_indices = similar_video_games_indices[similar_video_games_indices < vg_df.shape[0]]
+    
+    # filter out the video games the user has already rated
+    rated_video_games = list(user_ratings[user_ratings.columns.intersection(vg_df['Name'])].dropna(axis=1).columns)
+    similar_video_games_indices = [i for i in similar_video_games_indices if vg_df.iloc[i]['Name'] not in rated_video_games]
+    
+    # get the top k similar video games that the user has not rated
+    similar_video_games = list(set(vg_df.iloc[similar_video_games_indices]['Name'].tolist()))[:k]
+    return similar_video_games
+
+
+# define a function to recommend movies for a given video game
+def recommend_movies_for_video_game(vg_name, user_id, k=10):
+    user_ratings = m_ratings_df[m_ratings_df['users'] == user_id]
+    # get the index of the video game in the m_df dataframe
+    vg_index = vg_df.index[vg_df['Name'] == vg_name][0]
+    # get the top k similar movies to the movie
+    similar_movies_indices = desc_cos_sim_matrix[vg_index].argsort()[::-1]
+    similar_movies_indices = similar_movies_indices[similar_movies_indices < m_df.shape[0]]
+    
+    # filter out the movies the user has already rated
+    rated_movies = list(user_ratings[user_ratings.columns.intersection(m_df['title'])].dropna(axis=1).columns)
+    similar_movies_indices = [i for i in similar_movies_indices if m_df.iloc[i]['title'] not in rated_movies]
+    
+    # get the top k similar movies that the user has not rated
+    similar_movies = list(set(m_df.iloc[similar_movies_indices]['title'].tolist()))[:k]
+    return similar_movies
+
+
+# print(recommend_movies_for_video_game("NBA Jam", 1))
+# print(recommend_video_games_for_movie("Happy Gilmore (1996)", 1))
