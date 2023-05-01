@@ -17,13 +17,22 @@ def getUserInfo():
     return jsonify(response), 200
 
 # return game recommendations for a given movie
-@app.route('/recommendGames', methods=['POST'])
+@app.route('/recommend', methods=['POST'])
 def recommendGames():
     # if not isinstance(movie, str) or not movie:
     #     return False
-    movieName = request.json["movie"]
-    print(movieName)
-    recList = recommender2.recommend_video_games_for_movie(movieName)
+    title = ""
+    isGame = request.json["isGame"]
+    recList = []
+    if isGame:
+        title = request.json["game"]
+        print(title)
+        recList = recommender2.recommend_video_games_for_movie(title)
+    else:
+        title = request.json["movie"]
+        print(title)
+        recList = recommender2.recommend_movies_for_video_game(title)
+
     response = {"recs": recList}
     
     return jsonify(response), 200
