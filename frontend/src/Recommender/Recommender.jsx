@@ -58,6 +58,7 @@ export default class Recommender extends React.Component {
         </div>
   
         <div className="App">
+          <h3 style={{ color: 'white' }}>Top 10 Recommendations</h3>
           <Row className="mx-2 row row-cols-4">
             {recommendations.map((rec, index) => (
               <Card key={index}>

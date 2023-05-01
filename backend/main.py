@@ -18,7 +18,7 @@ def getUserInfo():
 
 # return game recommendations for a given movie
 @app.route('/recommend', methods=['POST'])
-def recommendGames():
+def recommend():
     # if not isinstance(movie, str) or not movie:
     #     return False
     title = ""
@@ -37,19 +37,19 @@ def recommendGames():
     
     return jsonify(response), 200
 
-# return movie recommendations for a given game
-@app.route('/recommendMovies', methods=['POST'])
-def recommendMovies():
-    # if not isinstance(movie, str) or not movie:
-    #     return False
-    game = request.json["game"]
-    print(game)
-    recList = recommender2.recommend_movies_for_video_game(game)
-    response = {"recs": recList}
+# # return movie recommendations for a given game
+# @app.route('/recommendMovies', methods=['POST'])
+# def recommendMovies():
+#     # if not isinstance(movie, str) or not movie:
+#     #     return False
+#     game = request.json["game"]
+#     print(game)
+#     recList = recommender2.recommend_movies_for_video_game(game)
+#     response = {"recs": recList}
     
-    return jsonify(response), 200
+#     return jsonify(response), 200
 
 
 if __name__ == '__main__':
    port = 5000
-   app.run(host='0.0.0.0', port=port)
+   app.run(host='0.0.0.0', port=port, debug=True )

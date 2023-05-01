@@ -54,9 +54,12 @@ def recommend_video_games_for_movie(movie_title, k=10):
     # get the index of the movie in the m_df dataframe
     movie_index = m_df.index[m_df['title'] == movie_title][0]
     # get the top k similar video games to the movie
-    similar_video_games_indices = cos_sim_matrix[movie_index].argsort()[::-1][1:k+1]
+    similar_video_games_indices = cos_sim_matrix[movie_index].argsort()[::-1]
+    similar_video_games_indices = similar_video_games_indices[similar_video_games_indices < vg_df.shape[0]]
+    # similar_video_games_indices = similar_video_games_indices[:k]
     # return the names of the similar video games
-    similar_video_games = vg_df.iloc[similar_video_games_indices]['Name'].tolist()
+    similar_video_games = list(set(vg_df.iloc[similar_video_games_indices]['Name'].tolist()))[:k]
+    print(len(similar_video_games))
     return similar_video_games
 
 # define a function to recommend movies for a given video game
@@ -64,11 +67,14 @@ def recommend_movies_for_video_game(vg_name, k=10):
     # get the index of the video game in the vg_df dataframe
     vg_index = vg_df.index[vg_df['Name'] == vg_name][0]
     # get the top k similar movies to the video game
-    similar_movies_indices = cos_sim_matrix[vg_index+len(vg_df)].argsort()[::-1][1:k+1]
+    similar_movies_indices = cos_sim_matrix[vg_index].argsort()[::-1]
+    similar_movies_indices = similar_movies_indices[similar_movies_indices < m_df.shape[0]]
+    # similar_movies_indices = similar_movies_indices[:k]
     # return the titles of the similar movies
-    similar_movies = m_df.iloc[similar_movies_indices]['title'].tolist()
+    # similar_movies = list(set(vg_df.iloc[similar_video_games_indices]['Name'].tolist()))[:k]
+    similar_movies = list(set(m_df.iloc[similar_movies_indices]['title'].tolist()))[:k]
     return similar_movies
 
 
-# print(recommend_video_games_for_movie("Toy Story (1995)"))
+# print(recommend_video_games_for_movie("Alice in Wonderland (2010)"))
 # print(recommend_movies_for_video_game("NBA Jam"))
