@@ -13,8 +13,8 @@ vg_df = pd.read_csv('cleaned_video_games.csv').dropna(subset=['description'])
 m_df = pd.read_csv('cleaned_movies.csv').dropna(subset=['description'])
 
 # load ratings data
-vg_ratings_df = pd.read_csv('vg_ratings.csv')
-m_ratings_df = pd.read_csv('movie_ratings.csv')
+vg_ratings_df = pd.read_csv('vg_user_item.csv')
+m_ratings_df = pd.read_csv('movie_user_item.csv')
 # print(vg_ratings_df.columns)
 # print(m_ratings_df.columns)
 
@@ -64,9 +64,9 @@ def recommend_video_games_for_movie(movie_title, user_id, k=10):
     similar_video_games_indices = desc_cos_sim_matrix[movie_index].argsort()[::-1]
     similar_video_games_indices = similar_video_games_indices[similar_video_games_indices < vg_df.shape[0]]
     
-    # filter out the video games the user has already rated
-    rated_video_games = list(user_ratings[user_ratings.columns.intersection(vg_df['Name'])].dropna(axis=1).columns)
-    similar_video_games_indices = [i for i in similar_video_games_indices if vg_df.iloc[i]['Name'] not in rated_video_games]
+    # # filter out the video games the user has already rated
+    # rated_video_games = list(user_ratings[user_ratings.columns.intersection(vg_df['Name'])].dropna(axis=1).columns)
+    # similar_video_games_indices = [i for i in similar_video_games_indices if vg_df.iloc[i]['Name'] not in rated_video_games]
     
     # get the top k similar video games that the user has not rated
     similar_video_games = list(set(vg_df.iloc[similar_video_games_indices]['Name'].tolist()))[:k]
@@ -82,9 +82,9 @@ def recommend_movies_for_video_game(vg_name, user_id, k=10):
     similar_movies_indices = desc_cos_sim_matrix[vg_index].argsort()[::-1]
     similar_movies_indices = similar_movies_indices[similar_movies_indices < m_df.shape[0]]
     
-    # filter out the movies the user has already rated
-    rated_movies = list(user_ratings[user_ratings.columns.intersection(m_df['title'])].dropna(axis=1).columns)
-    similar_movies_indices = [i for i in similar_movies_indices if m_df.iloc[i]['title'] not in rated_movies]
+    # # filter out the movies the user has already rated
+    # rated_movies = list(user_ratings[user_ratings.columns.intersection(m_df['title'])].dropna(axis=1).columns)
+    # similar_movies_indices = [i for i in similar_movies_indices if m_df.iloc[i]['title'] not in rated_movies]
     
     # get the top k similar movies that the user has not rated
     similar_movies = list(set(m_df.iloc[similar_movies_indices]['title'].tolist()))[:k]

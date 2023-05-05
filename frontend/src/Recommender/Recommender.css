@@ -26,3 +26,15 @@
 .search-bar{
     margin-left: 0px;
 }
+
+.userId-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 10px;
+    color: white;
+}
+
+.userIdSearch {
+    width: 100px
+}

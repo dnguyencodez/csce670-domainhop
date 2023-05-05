@@ -3,6 +3,7 @@ from flask_cors import CORS
 import json
 import recommender
 import pandas as pd
+import mergerPreferences
 
 app = Flask(__name__)
 CORS(app)
@@ -10,21 +11,10 @@ CORS(app)
 # return the user's favorite movies and games
 @app.route('/favorites', methods=['POST'])
 def getUserInfo():
-    # read in the csv files
-    vg_ratings_df = pd.read_csv('vg_ratings.csv')
-    movie_ratings_df = pd.read_csv('movie_ratings.csv')
+    user = int(request.json["user"])
+    print(user)
+    vg_names, movie_titles = mergerPreferences.recommend(user)
 
-    # extract the first 10 movies and video games that the user has rated
-    user_id = 1  # replace with the ID of the desired user
-    n_items = 5
-
-    user_vg_ratings = vg_ratings_df.loc[vg_ratings_df['users'] == user_id].iloc[:, 1:]
-    user_vg_ratings = user_vg_ratings.loc[:, (user_vg_ratings != 0).any(axis=0)].iloc[:, :n_items]
-    vg_names = user_vg_ratings.columns.tolist()
-
-    user_movie_ratings = movie_ratings_df.loc[movie_ratings_df['users'] == user_id].iloc[:, 1:]
-    user_movie_ratings = user_movie_ratings.loc[:, (user_movie_ratings != 0).any(axis=0)].iloc[:, :n_items]
-    movie_titles = user_movie_ratings.columns.tolist()
     response = {"games": vg_names, "movies": movie_titles}
 
     return jsonify(response), 200
@@ -37,14 +27,15 @@ def recommend():
     title = ""
     isGame = request.json["isGame"]
     recList = []
+    user = int(request.json["user"])
     if isGame:
         title = request.json["game"]
         print(title)
-        recList = recommender.recommend_video_games_for_movie(title, 832)
+        recList = recommender.recommend_video_games_for_movie(title, user)
     else:
         title = request.json["movie"]
         print(title)
-        recList = recommender.recommend_movies_for_video_game(title, 832)
+        recList = recommender.recommend_movies_for_video_game(title, user)
 
     response = {"recs": recList}
     
