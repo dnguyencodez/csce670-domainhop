@@ -36,6 +36,6 @@ def recommend(userId=1):
     movie_top_recommendations = [movie_titles[idx] for idx in movie_top_indices]
     return vg_top_recommendations, movie_top_recommendations
 
-# vg, movies = recommend(600)
+# vg, movies = recommend(5)
 # print(vg)
 # print(movies)

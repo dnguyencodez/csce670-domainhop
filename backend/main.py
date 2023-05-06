@@ -3,7 +3,7 @@ from flask_cors import CORS
 import json
 import recommender
 import pandas as pd
-import mergerPreferences
+import mergePreferences
 
 app = Flask(__name__)
 CORS(app)
@@ -13,7 +13,7 @@ CORS(app)
 def getUserInfo():
     user = int(request.json["user"])
     print(user)
-    vg_names, movie_titles = mergerPreferences.recommend(user)
+    vg_names, movie_titles = mergePreferences.recommend(user)
 
     response = {"games": vg_names, "movies": movie_titles}
 
@@ -40,18 +40,6 @@ def recommend():
     response = {"recs": recList}
     
     return jsonify(response), 200
-
-# # return movie recommendations for a given game
-# @app.route('/recommendMovies', methods=['POST'])
-# def recommendMovies():
-#     # if not isinstance(movie, str) or not movie:
-#     #     return False
-#     game = request.json["game"]
-#     print(game)
-#     recList = recommender2.recommend_movies_for_video_game(game)
-#     response = {"recs": recList}
-    
-#     return jsonify(response), 200
 
 
 if __name__ == '__main__':

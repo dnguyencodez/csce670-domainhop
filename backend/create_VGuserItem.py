@@ -24,28 +24,45 @@ for i, row in df.iterrows():
     mean_rating = row['Mean_Rating']
     num_ratings = int(row['Number_of_Ratings'])
     if num_ratings > 4000:
-        shift = random.randint(10, 40)
+        shift = random.randint(350, 400)
         num_ratings = num_users - shift
     elif num_ratings > 2000 and num_ratings < 4000:
-        shift = random.randint(40, 70)
+        shift = random.randint(400, 475)
         num_ratings = num_users - shift
     elif num_ratings > 1000 and num_ratings < 2000:
-        shift = random.randint(70, 120)
+        shift = random.randint(475, 525)
         num_ratings = num_users - shift
-    elif num_ratings >= num_users and num_ratings < 1000:
-        shift = random.randint(120, 160)
+    elif num_ratings >= num_users and num_ratings <= 1000:
+        shift = random.randint(525, 570)
         num_ratings = num_users - shift
     elif num_ratings < num_users and num_ratings > 200:
-        num_ratings -= 100
+        shift = random.randint(50, 100)
+        num_ratings = shift
     elif num_ratings < num_users and num_ratings > 20:
-        num_ratings -= 18
+        shift = random.randint(10, 50)
+        num_ratings = shift
+    else:
+        shift = random.randint(1, 8)
+        num_ratings = shift
 
+    # print(num_ratings)
     users = np.random.choice(num_users, size=num_ratings, replace=False)
     ratings = np.random.normal(mean_rating, 1, size=num_ratings)
+    # Clip the ratings to the range of 0 to 10
+    ratings = np.clip(ratings, 0, 10)
     for user, rating in zip(users, ratings):
-        matrix[user, game_index] = rating
+        rating_rounded = rating / 2
+        if rating_rounded % 1 < 0.45:
+            rating_rounded = int(rating_rounded)
+        elif rating_rounded % 1 > 0.55:
+            rating_rounded = int(rating_rounded) + 1
+        elif rating_rounded % 1 > 0.45 and rating_rounded % 1 < 0.55:
+            rating_rounded = round(rating_rounded * 2) / 2
+        else:
+            rating_rounded = 0
+        matrix[user, game_index] = rating_rounded
         user_counts[user] += 1
-    if np.max(user_counts) >= 170:
+    if np.max(user_counts) >= 300:
         break
 
 # convert the matrix to a dataframe
